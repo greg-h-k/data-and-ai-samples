@@ -312,20 +312,38 @@
     </div>
 
     <footer>
-        <p>View on <a href="https://github.com/greghk/data-and-ai-samples">GitHub</a></p>
+        <p>View on <a href="https://github.com/greg-h-k/data-and-ai-samples">GitHub</a></p>
     </footer>
 
     <script>
         let allSamples = [];
-        const repoBase = '..'; // Adjust based on deployment
+
+        // Configuration - update these for your repo
+        const GITHUB_USER = 'greg-h-k';
+        const GITHUB_REPO = 'data-and-ai-samples';
+        const GITHUB_BRANCH = 'main';
+
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const repoBase = isGitHubPages
+            ? `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/tree/${GITHUB_BRANCH}`
+            : '..';
 
         async function loadCatalog() {
             try {
-                // Try relative path first (for GitHub Pages), then parent dir (for local)
-                let response = await fetch('../catalog.yaml');
-                if (!response.ok) {
-                    response = await fetch('./catalog.yaml');
+                let response;
+
+                if (isGitHubPages) {
+                    // On GitHub Pages, fetch from raw.githubusercontent.com
+                    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/catalog.yaml`;
+                    response = await fetch(rawUrl);
+                } else {
+                    // Local development - try relative paths
+                    response = await fetch('../catalog.yaml');
+                    if (!response.ok) {
+                        response = await fetch('./catalog.yaml');
+                    }
                 }
+
                 const yamlText = await response.text();
                 const catalog = jsyaml.load(yamlText);
                 allSamples = catalog.samples || [];
