@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data & AI Samples</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fa;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Filters */
+        .filters {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .filter-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 0.95rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        /* Results count */
+        .results-count {
+            margin-bottom: 1rem;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Sample grid */
+        .samples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .sample-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sample-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .sample-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #1a1a2e;
+        }
+
+        .sample-card h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .sample-card h3 a:hover {
+            color: #4a90d9;
+        }
+
+        .sample-card .description {
+            color: #555;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .sample-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-complexity {
+            background: #e8f4fd;
+            color: #1e6bb8;
+        }
+
+        .badge-complexity.beginner {
+            background: #e6f7ed;
+            color: #1d7a47;
+        }
+
+        .badge-complexity.intermediate {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .badge-complexity.advanced {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .badge-category {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .services {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .service-tag {
+            background: #f0f4f8;
+            color: #3d5a80;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .tag {
+            background: #fafafa;
+            color: #888;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid #eee;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #888;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #4a90d9;
+            text-decoration: none;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #888;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .samples-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-groups {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Data & AI Samples</h1>
+        <p>A curated collection of AWS samples covering data engineering, analytics, machine learning, and AI services.</p>
+    </header>
+
+    <div class="container">
+        <div class="filters">
+            <input type="text" class="search-box" id="search" placeholder="Search samples...">
+            <div class="filter-groups">
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select id="filter-category">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Complexity</label>
+                    <select id="filter-complexity">
+                        <option value="">All Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Service</label>
+                    <select id="filter-service">
+                        <option value="">All Services</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-count" id="results-count"></div>
+        <div class="samples-grid" id="samples-grid">
+            <div class="loading">Loading samples...</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>View on <a href="https://github.com/greghk/data-and-ai-samples">GitHub</a></p>
+    </footer>
+
+    <script>
+        let allSamples = [];
+        const repoBase = '..'; // Adjust based on deployment
+
+        async function loadCatalog() {
+            try {
+                // Try relative path first (for GitHub Pages), then parent dir (for local)
+                let response = await fetch('../catalog.yaml');
+                if (!response.ok) {
+                    response = await fetch('./catalog.yaml');
+                }
+                const yamlText = await response.text();
+                const catalog = jsyaml.load(yamlText);
+                allSamples = catalog.samples || [];
+
+                populateFilters();
+                renderSamples();
+            } catch (error) {
+                console.error('Failed to load catalog:', error);
+                document.getElementById('samples-grid').innerHTML = `
+                    <div class="empty-state">
+                        <h3>Failed to load catalog</h3>
+                        <p>Could not load catalog.yaml. Make sure it exists and is accessible.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function populateFilters() {
+            // Categories
+            const categories = [...new Set(allSamples.map(s => s.category))].sort();
+            const categorySelect = document.getElementById('filter-category');
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = formatCategory(cat);
+                categorySelect.appendChild(option);
+            });
+
+            // Services
+            const services = [...new Set(allSamples.flatMap(s => s.services || []))].sort();
+            const serviceSelect = document.getElementById('filter-service');
+            services.forEach(svc => {
+                const option = document.createElement('option');
+                option.value = svc;
+                option.textContent = svc;
+                serviceSelect.appendChild(option);
+            });
+        }
+
+        function formatCategory(cat) {
+            return cat.split('-').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        function getFilteredSamples() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const category = document.getElementById('filter-category').value;
+            const complexity = document.getElementById('filter-complexity').value;
+            const service = document.getElementById('filter-service').value;
+
+            return allSamples.filter(sample => {
+                // Search filter
+                if (searchTerm) {
+                    const searchable = [
+                        sample.title,
+                        sample.description,
+                        ...(sample.tags || []),
+                        ...(sample.services || [])
+                    ].join(' ').toLowerCase();
+                    if (!searchable.includes(searchTerm)) return false;
+                }
+
+                // Category filter
+                if (category && sample.category !== category) return false;
+
+                // Complexity filter
+                if (complexity && sample.complexity !== complexity) return false;
+
+                // Service filter
+                if (service && !(sample.services || []).includes(service)) return false;
+
+                return true;
+            });
+        }
+
+        function renderSamples() {
+            const filtered = getFilteredSamples();
+            const grid = document.getElementById('samples-grid');
+            const countEl = document.getElementById('results-count');
+
+            countEl.textContent = `Showing ${filtered.length} of ${allSamples.length} samples`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No samples found</h3>
+                        <p>Try adjusting your filters or search term.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(sample => `
+                <div class="sample-card">
+                    <h3><a href="${repoBase}/${sample.path}" target="_blank">${sample.title}</a></h3>
+                    <p class="description">${sample.description}</p>
+                    <div class="meta">
+                        <span class="badge badge-complexity ${sample.complexity}">${sample.complexity}</span>
+                        <span class="badge badge-category">${formatCategory(sample.category)}</span>
+                    </div>
+                    <div class="services">
+                        ${(sample.services || []).map(svc => `<span class="service-tag">${svc}</span>`).join('')}
+                    </div>
+                    <div class="tags">
+                        ${(sample.tags || []).map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event listeners
+        document.getElementById('search').addEventListener('input', renderSamples);
+        document.getElementById('filter-category').addEventListener('change', renderSamples);
+        document.getElementById('filter-complexity').addEventListener('change', renderSamples);
+        document.getElementById('filter-service').addEventListener('change', renderSamples);
+
+        // Initial load
+        loadCatalog();
+    </script>
+</body>
+</html>
