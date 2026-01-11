@@ -1,0 +1,80 @@
+# Sample Catalog
+# Machine-readable metadata for all samples in this repository
+#
+# Schema:
+#   name: lowercase-with-hyphens identifier
+#   title: Human-readable title
+#   description: One-line description
+#   path: Relative path from repository root
+#   category: Top-level category
+#   subcategory: Specific area within category
+#   services: List of AWS services used
+#   tags: Searchable keywords
+#   complexity: beginner | intermediate | advanced
+#   languages: Programming languages used
+#   last_updated: YYYY-MM-DD
+
+samples:
+  - name: redshift-streaming
+    title: Redshift Streaming Ingestion from Kinesis
+    description: Stream data directly from Kinesis Data Streams into Redshift using native materialized views
+    path: data-engineering-and-analytics/streaming/redshift-streaming
+    category: data-engineering-and-analytics
+    subcategory: streaming
+    services:
+      - Amazon Kinesis Data Streams
+      - Amazon Redshift
+      - AWS IAM
+    tags:
+      - streaming
+      - real-time
+      - iot
+      - data-ingestion
+      - materialized-views
+      - json
+      - binary-decoding
+    complexity: intermediate
+    languages:
+      - python
+      - sql
+    last_updated: 2025-01-11
+
+# Template for adding new samples:
+#
+#  - name: sample-name
+#    title: Human Readable Title
+#    description: One-line description of what it does
+#    path: category/subcategory/sample-name
+#    category: data-engineering-and-analytics | machine-learning-and-ai | serverless
+#    subcategory: specific-area
+#    services:
+#      - Service 1
+#      - Service 2
+#    tags:
+#      - tag1
+#      - tag2
+#    complexity: beginner | intermediate | advanced
+#    languages:
+#      - python
+#      - typescript
+#    last_updated: YYYY-MM-DD
+
+# Categories:
+#
+# data-engineering-and-analytics:
+#   - streaming: Real-time data processing (Kinesis, MSK, Flink)
+#   - batch: Batch ETL and processing (Glue, EMR, Step Functions)
+#   - orchestration: Workflow orchestration (MWAA, Step Functions)
+#   - storage: Data lakes, S3 patterns, Lake Formation
+#   - warehousing: Redshift patterns, optimization
+#
+# machine-learning-and-ai:
+#   - generative-ai: Bedrock, LLMs, RAG, agents
+#   - sagemaker: Training, deployment, MLOps
+#   - computer-vision: Rekognition, custom models
+#   - nlp: Comprehend, Transcribe, Translate
+#
+# serverless:
+#   - api-patterns: API Gateway, Lambda, AppSync
+#   - event-driven: EventBridge, SQS, SNS patterns
+#   - containers: ECS, Fargate serverless patterns
