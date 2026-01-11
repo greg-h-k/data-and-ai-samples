@@ -14,6 +14,8 @@ data-and-ai-samples/
 ├── CLAUDE.md                           # This file - AI assistant instructions
 ├── SAMPLE_TEMPLATE.md                  # Template for sample READMEs
 ├── catalog.yaml                        # Machine-readable sample metadata
+├── docs/
+│   └── index.html                      # GitHub Pages portfolio site
 ├── data-engineering-and-analytics/
 │   ├── streaming/                      # Real-time: Kinesis, MSK, Flink
 │   ├── batch/                          # Batch ETL: Glue, EMR
@@ -284,3 +286,158 @@ When modifying an existing sample:
 2. If services change, update tags in README and `catalog.yaml`
 3. Ensure cleanup instructions still match the current architecture
 4. Test deployment instructions still work
+
+## GitHub Pages Documentation Site
+
+The repository includes a portfolio site hosted on GitHub Pages that provides a searchable, filterable catalog of all samples.
+
+### How It Works
+
+```
+┌─────────────────────┐
+│   catalog.yaml      │  ← Single source of truth
+└─────────┬───────────┘
+          │ fetched at runtime
+          ▼
+┌─────────────────────┐
+│   docs/index.html   │  ← Static HTML + JavaScript
+│   - Parses YAML     │
+│   - Renders cards   │
+│   - Filters/search  │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   GitHub Pages      │  ← Hosted at github.io
+└─────────────────────┘
+```
+
+**Key design decisions:**
+- **No build step**: The site is a single HTML file with vanilla JavaScript
+- **No duplication**: Fetches `catalog.yaml` from `raw.githubusercontent.com` at runtime
+- **Auto-updates**: Adding a sample to `catalog.yaml` automatically appears on the site
+
+### File Location
+
+```
+docs/
+└── index.html    # The complete site (HTML, CSS, JS in one file)
+```
+
+### Configuration
+
+The site has configuration variables at the top of the `<script>` section in `docs/index.html`:
+
+```javascript
+const GITHUB_USER = 'greg-h-k';      // GitHub username
+const GITHUB_REPO = 'data-and-ai-samples';  // Repository name
+const GITHUB_BRANCH = 'main';        // Branch to fetch catalog from
+```
+
+Update these if the repository is forked or renamed.
+
+### Local Development
+
+To test the site locally:
+
+```bash
+# From repository root
+python3 -m http.server 8000
+
+# Then open http://localhost:8000/docs/
+```
+
+The site detects local development vs GitHub Pages and adjusts the catalog fetch path accordingly.
+
+### Features
+
+The site provides:
+
+| Feature | Description |
+|---------|-------------|
+| **Search** | Filters across title, description, tags, and services |
+| **Category filter** | Filter by top-level category (auto-populated from catalog) |
+| **Complexity filter** | Filter by beginner/intermediate/advanced |
+| **Service filter** | Filter by AWS service (auto-populated from catalog) |
+| **Sample cards** | Display title, description, badges, services, and tags |
+| **Direct links** | Cards link to sample folders in the GitHub repository |
+
+### Extending the Site
+
+#### Adding new filters
+
+To add a new filter (e.g., by programming language):
+
+1. Add a new `<select>` element in the `.filter-groups` div
+2. Populate options in the `populateFilters()` function
+3. Add filter logic in `getFilteredSamples()`
+4. Add event listener for the new select
+
+Example:
+```javascript
+// In populateFilters()
+const languages = [...new Set(allSamples.flatMap(s => s.languages || []))].sort();
+const langSelect = document.getElementById('filter-language');
+languages.forEach(lang => {
+    const option = document.createElement('option');
+    option.value = lang;
+    option.textContent = lang;
+    langSelect.appendChild(option);
+});
+
+// In getFilteredSamples()
+const language = document.getElementById('filter-language').value;
+if (language && !(sample.languages || []).includes(language)) return false;
+```
+
+#### Styling changes
+
+All CSS is in the `<style>` section at the top of `index.html`. Key classes:
+
+| Class | Purpose |
+|-------|---------|
+| `.sample-card` | Individual sample card container |
+| `.badge` | Tag/label styling |
+| `.badge-complexity` | Complexity level badges (has `.beginner`, `.intermediate`, `.advanced` variants) |
+| `.service-tag` | AWS service tags |
+| `.tag` | General tags |
+| `.filters` | Filter container |
+| `.search-box` | Search input styling |
+
+#### Adding new card fields
+
+To display additional metadata from `catalog.yaml`:
+
+1. Add the field to samples in `catalog.yaml`
+2. Update the card template in `renderSamples()`:
+
+```javascript
+grid.innerHTML = filtered.map(sample => `
+    <div class="sample-card">
+        ...
+        <div class="new-field">${sample.new_field || 'Default'}</div>
+        ...
+    </div>
+`).join('');
+```
+
+### GitHub Pages Setup
+
+The site is configured to deploy from the `/docs` folder on the `main` branch:
+
+1. Go to repository Settings → Pages
+2. Source: "Deploy from a branch"
+3. Branch: `main`, folder: `/docs`
+4. Save
+
+The site will be available at `https://<username>.github.io/data-and-ai-samples/`
+
+### Maintenance Checklist
+
+When updating the docs site:
+
+- [ ] Test locally before pushing (`python3 -m http.server 8000`)
+- [ ] Verify catalog.yaml is valid YAML (site will fail silently on parse errors)
+- [ ] Check that new samples appear correctly after push
+- [ ] Test all filters work with new data
+- [ ] Verify links to samples work correctly
