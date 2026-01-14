@@ -39,6 +39,29 @@ samples:
       - sql
     last_updated: 2025-01-11
 
+  - name: msk-multi-region-active-active-demo
+    title: MSK Multi-Region Active-Active Replication
+    description: Deploy bidirectional Kafka replication across two AWS regions using MSK Serverless and MSK Replicator
+    path: data-engineering-and-analytics/streaming/msk-multi-region-active-active-demo
+    category: data-engineering-and-analytics
+    subcategory: streaming
+    services:
+      - Amazon MSK
+    tags:
+      - streaming
+      - kafka
+      - msk
+      - multi-region
+      - active-active
+      - replication
+      - real-time
+      - disaster-recovery
+    complexity: intermediate
+    languages:
+      - hcl
+      - bash
+    last_updated: 2025-01-14
+
 # Template for adding new samples:
 #
 #  - name: sample-name

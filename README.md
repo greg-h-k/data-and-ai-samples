@@ -21,6 +21,7 @@ This repository contains hands-on examples developed through real-world customer
 | Sample | Description | Services | Complexity |
 |--------|-------------|----------|------------|
 | [redshift-streaming](./data-engineering-and-analytics/streaming/redshift-streaming/) | Stream data from Kinesis directly into Redshift using native materialized views | Kinesis, Redshift | Intermediate |
+| [msk-multi-region-active-active-demo](./data-engineering-and-analytics/streaming/msk-multi-region-active-active-demo/) | Bidirectional Kafka replication across regions using MSK Serverless and MSK Replicator | Amazon MSK | Intermediate |
 
 <!--
 ### Machine Learning & AI
