@@ -110,6 +110,42 @@ On successful login, you should be presented with the RStudio IDE
 ![RStudio IDE](./docs/rstudio_ide.png)
 
 
+## Security Considerations
+
+### ⚠️ This is a Demo Configuration
+
+This deployment is designed for demonstration and development purposes. Before using in production, address these security considerations:
+
+**Authentication & Authorization:**
+- ✅ **Implemented**: No public IPs, SSM-only access
+- ❌ **Missing**: LDAP/SAML/OAuth integration - currently only local user authentication
+- ❌ **Missing**: Multi-factor authentication (MFA)
+- ⚠️ **Warning**: Users must set strong passwords with `sudo passwd <username>`
+
+**Network Security:**
+- ✅ **Implemented**: Private subnet deployment with no inbound rules from internet
+- ✅ **Implemented**: VPC endpoints for SSM (no internet gateway required for management)
+- ✅ **Implemented**: IMDSv2 required on EC2 instances
+- ⚠️ **Warning**: Security group allows unrestricted egress (0.0.0.0/0)
+  - For production: Restrict to required services (apt repos, CRAN, PyPI, etc.)
+- ⚠️ **Warning**: Self-referencing security group allows any protocol
+  - Fine for single instance, but document the intent
+
+**Data Protection:**
+- ✅ **Implemented**: EBS root volume encrypted at rest
+- ✅ **Implemented**: HTTPS for RStudio (when properly configured with certificates)
+- ❌ **Missing**: No backup strategy for user data or R packages
+- ❌ **Missing**: No data retention policies
+
+**Monitoring & Audit:**
+- ❌ **Missing**: VPC Flow Logs
+- ❌ **Missing**: CloudTrail logging
+- ❌ **Missing**: CloudWatch alarms for suspicious activity
+- ❌ **Missing**: RStudio access logs centralized to CloudWatch
+
+**Review [Posit Admin Guide Security Section](https://docs.posit.co/ide/server-pro/securing_rstudio_server.html)**
+
+
 ## Delete resources
 
 To remove the deployed infrastructure, from the *infra/* directory, run ```terraform destroy```

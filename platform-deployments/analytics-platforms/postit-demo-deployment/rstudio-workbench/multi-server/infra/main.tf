@@ -181,8 +181,31 @@ EOF
 }
 
 
-# POSTGRES DATABASE 
-## postgres db required for multi server deployment 
+# ============================================================================
+# POSTGRES DATABASE
+# ============================================================================
+# PostgreSQL database required for multi-server RStudio Workbench deployment.
+# Stores session data, user metadata, and load balancer state.
+#
+# SECURITY WARNING: This demo configuration has several settings that are
+# NOT suitable for production use:
+#
+# 1. skip_final_snapshot = true
+#    RISK: Data will be permanently lost when cluster is destroyed
+#    FIX: Set to false and provide final_snapshot_identifier for production
+#
+# 2. Deletion protection is not enabled
+#    RISK: Database can be accidentally deleted
+#    FIX: Add deletion_protection = true for production
+#
+# 3. Backup retention is not configured
+#    RISK: No automated backups beyond AWS defaults
+#    FIX: Add backup_retention_period = 7 (or more) for production
+#
+# For production deployments, please review:
+# https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.BestPractices.html
+# ============================================================================
+
 resource "aws_db_subnet_group" "rstudio-workbench-db-subnet-group" {
   name = "rstudio-workbench-db-subnet-group"
   subnet_ids = [for subnet in module.vpc.private_subnets: subnet]
@@ -203,8 +226,10 @@ resource "aws_rds_cluster" "rstudio-workbench-db-cluster" {
   manage_master_user_password = true
   vpc_security_group_ids = [aws_security_group.intra_sg.id]
   db_subnet_group_name = aws_db_subnet_group.rstudio-workbench-db-subnet-group.id
+
+  # WARNING: Data loss risk! For production, set to false and provide final_snapshot_identifier
   skip_final_snapshot = true
-  
+
   iam_database_authentication_enabled = true
 
   serverlessv2_scaling_configuration {

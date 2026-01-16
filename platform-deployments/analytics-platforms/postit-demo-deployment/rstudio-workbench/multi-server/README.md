@@ -119,17 +119,29 @@ This will prompt for a password. Retrieve the database password from AWS Secrets
 
 ![rds secret](./docs/rds_secret.png)
 
-When connected to the postgres db, run commands to create a database and role for workbench, as described [here](https://support.posit.co/hc/en-us/articles/1500005822102-Install-and-Configure-PostgreSQL-for-RStudio-Server-Pro). 
+When connected to the postgres db, run commands to create a database and role for workbench, as described [here](https://support.posit.co/hc/en-us/articles/1500005822102-Install-and-Configure-PostgreSQL-for-RStudio-Server-Pro).
 
-On RDS, there is an additional step vs the above link where we must grant the new role to the super user we are logged in as before we can then create the database. 
+On RDS, there is an additional step vs the above link where we must grant the new role to the super user we are logged in as before we can then create the database.
 
+**⚠️ SECURITY WARNING: Generate a strong password before running these commands!**
+
+```bash
+# Generate a strong random password (20 characters, alphanumeric + special)
+DB_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-20)
+echo "Generated password: $DB_PASSWORD"
+# IMPORTANT: Save this password securely - you'll need it for database.conf
 ```
-CREATE ROLE rstudio CREATEDB LOGIN PASSWORD 'test';
+
+Then create the database role and database:
+
+```sql
+-- Replace YOUR_SECURE_PASSWORD_HERE with the password you generated above
+CREATE ROLE rstudio CREATEDB LOGIN PASSWORD 'YOUR_SECURE_PASSWORD_HERE';
 GRANT rstudio TO postgres;
 CREATE DATABASE rstudio WITH OWNER = rstudio;
 ```
 
-In reality, use a more secure password, this is just for demo purposes. 
+**DO NOT use weak passwords like 'test', 'password', or '123456' in any environment, including demos.** 
 
 ### Workbench configuration
 Once the database has been set up with the new role and empty database, we must set the corresponding configuration in the */etc/rstudio/database.conf* file that Workbench will look at. 
@@ -140,7 +152,7 @@ Exit the psql session with ```\q``` and whilst still logged into the EC2 instanc
 sudo nano /etc/rstudio/database.conf
 ```
 
-Set the file to include the following: 
+Set the file to include the following:
 
 ```
 # /etc/rstudio/database.conf
@@ -162,15 +174,19 @@ username=rstudio
 # Specifies the database connection password. This may be encrypted with the secure-cookie-key.
 # The encrypted password can be generated using the helper command rstudio-server encrypt-password.
 # It is strongly recommended that you encrypt the password!
-password=test
+password=YOUR_ENCRYPTED_PASSWORD_HERE
 
 # Specifies the maximum amount of seconds allowed before a database connection attempt
 # is considered failed. The default if not specified is 10 seconds. Corresponds to the
-# PostgreSQL "connect_timeout=" connection string parameter. 
+# PostgreSQL "connect_timeout=" connection string parameter.
 connection-timeout-seconds=12
 ```
 
-Be sure to update *host=rds-writer-endpoint* with your endpoint. 
+**Important configuration steps:**
+
+1. **Update host**: Replace `<rds-writer-endpoint>` with your actual RDS writer endpoint (get this from the AWS Console or Terraform output)
+
+2. **Encrypt the password**: Before setting the password field, you **must** encrypt it using the `rstudio-server encrypt-password` command (documented in the next section). **Never store plain text passwords in configuration files.** 
 
 Then run 
 
@@ -251,9 +267,105 @@ and verify that sessions are being distributed across the nodes. You should see 
 
 ![load balancer status](./docs/load_balancer_status.png)
 
-See [here](https://docs.posit.co/ide/server-pro/getting_started/installation/multi_server_installation.html#verify) for additional instructions. 
+See [here](https://docs.posit.co/ide/server-pro/getting_started/installation/multi_server_installation.html#verify) for additional instructions.
 
-There are many more considerations before moving to production, but hopefully this demonstration aids in getting started. 
+There are many more considerations before moving to production, but hopefully this demonstration aids in getting started.
+
+
+## Security Considerations
+
+### ⚠️ This is a Demo Configuration
+
+This multi-server Workbench deployment demonstrates high availability patterns but is NOT production-ready. Before using in production, address these critical security considerations:
+
+**Database Security:**
+- ✅ **Implemented**: RDS master password managed by AWS Secrets Manager
+- ✅ **Implemented**: IAM database authentication enabled
+- ✅ **Implemented**: Encryption at rest for RDS
+- ⚠️ **CRITICAL WARNING**: `skip_final_snapshot = true` - **DATA WILL BE LOST** on `terraform destroy`
+  - For production: Set to `false` and provide `final_snapshot_identifier`
+  - Add `deletion_protection = true`
+  - Configure `backup_retention_period = 7` (or more days)
+- ⚠️ **Warning**: Database passwords shown in plaintext in this README are examples only
+  - **ALWAYS** use `rstudio-server encrypt-password` before storing in `/etc/rstudio/database.conf`
+  - **NEVER** use weak passwords like "test", "password", etc.
+
+**File System Security:**
+- ✅ **Implemented**: EFS encryption at rest
+- ✅ **Implemented**: EFS mount targets in private subnets only
+- ❌ **Missing**: EFS backup plan (AWS Backup)
+- ❌ **Missing**: EFS access point configuration for user isolation
+- ⚠️ **Warning**: Shared storage at `/efs/workbench/shared-storage` is world-readable
+  - Review permissions based on your data classification requirements
+
+**Network Security:**
+- ✅ **Implemented**: No public IPs on EC2 instances
+- ✅ **Implemented**: All resources in private subnets
+- ✅ **Implemented**: VPC endpoints for SSM access (would need to be added)
+- ⚠️ **Warning**: Security group allows unrestricted egress (0.0.0.0/0)
+  - For production: Create egress rules for specific services
+- ⚠️ **Warning**: Self-referencing security group allows all protocols internally
+  - Fine for this architecture, but document the intent
+- ⚠️ **Warning**: Single NAT gateway (cost vs. availability trade-off)
+  - For production HA: Deploy NAT gateway in each AZ
+
+**Authentication & Authorization:**
+- ✅ **Implemented**: Database-backed user sessions (survives node failure)
+- ❌ **Missing**: LDAP/SAML/OAuth integration - currently only local user authentication
+- ❌ **Missing**: Multi-factor authentication (MFA)
+- ❌ **Missing**: Role-based access control (RBAC) for projects
+- ⚠️ **Warning**: Users created manually with `sudo adduser`
+  - For production: Integrate with enterprise identity provider
+
+**High Availability Gaps:**
+- ⚠️ **Partial**: 2 EC2 instances for compute redundancy
+- ⚠️ **Single Point of Failure**: Aurora database is not multi-AZ in this config
+  - For production: Deploy Aurora replica in different AZ
+- ⚠️ **Single Point of Failure**: Single NAT gateway
+- ❌ **Missing**: Application Load Balancer (using Workbench internal LB)
+  - Consider adding ALB with health checks and SSL termination
+
+**Monitoring & Audit:**
+- ❌ **Missing**: VPC Flow Logs
+- ❌ **Missing**: CloudTrail logging
+- ❌ **Missing**: CloudWatch alarms for EC2, RDS, EFS
+- ❌ **Missing**: RDS Performance Insights
+- ❌ **Missing**: Workbench audit logs centralized to CloudWatch
+
+## Cleanup and Decommissioning
+
+**⚠️ CRITICAL WARNING**: This will permanently delete ALL data, including:
+- User home directories on EFS
+- All R packages and installed libraries
+- PostgreSQL database (sessions, user metadata)
+- All EC2 instances and their configurations
+
+**Before destroying:**
+1. **Backup user data** from EFS (`/efs/workbench/home`)
+2. **Export database** if you need session history
+3. **Save any custom configurations** from `/etc/rstudio/`
+
+**To destroy the infrastructure:**
+
+```bash
+# From the infra/ directory
+cd /path/to/rstudio-workbench/multi-server/infra/
+
+# Destroy all resources
+terraform destroy
+
+# When prompted, review the resources to be deleted
+# Type 'yes' to confirm
+```
+
+**Important notes:**
+- RDS cluster will be deleted **without a final snapshot** (see `skip_final_snapshot = true`)
+- EFS file system will be deleted along with all user data
+- You can also delete the custom AMI if no longer needed
+- NAT Gateway charges stop immediately upon deletion
+- EFS charges continue until the file system is fully deleted (usually < 1 minute)
+
+**Estimated time:** 5-10 minutes for complete resource deletion
 
 
 ## Notes
