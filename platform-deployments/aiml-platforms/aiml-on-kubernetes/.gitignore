@@ -1,0 +1,56 @@
+# ============================================================================
+# AI/ML Platform .gitignore
+# ============================================================================
+# This file prevents sensitive and generated files from being committed
+# to version control.
+#
+# NOTE: The placeholder secret files (secret.yaml, libre_chat_secret.yaml,
+# my_sql_secret.yaml) are intentionally tracked in Git with placeholder values.
+# This .gitignore prevents backups and local copies with real secrets from
+# being accidentally committed.
+# ============================================================================
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars.backup
+**/.terraform.tfstate.lock.info
+
+# Secret file backups (keep the originals with placeholders)
+**/*.yaml.bak
+**/*.yaml.orig
+**/*.yaml.backup
+**/secret*.yaml.local
+**/*_secret.yaml.local
+
+# Secret generation output
+generate-secrets-output.txt
+my-secrets.txt
+secrets.txt
+**/generated-secrets*.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+.cache/
+
+# Local environment files
+.env
+.env.local
+.env.*.local

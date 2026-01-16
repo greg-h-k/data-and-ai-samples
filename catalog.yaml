@@ -84,6 +84,44 @@ samples:
       - python
     last_updated: 2026-01-16
 
+  - name: aiml-on-kubernetes
+    title: AI/ML Platform on Amazon EKS
+    description: Production-ready AI/ML platform on EKS with GPU support, vLLM inference, ArgoCD GitOps, and integrated observability
+    path: platform-deployments/aiml-platforms/aiml-on-kubernetes
+    category: platform-deployments
+    subcategory: aiml-platforms
+    services:
+      - Amazon EKS
+      - Amazon VPC
+      - Amazon Route 53
+      - Amazon ACM
+      - Amazon ECR
+      - ArgoCD
+      - Prometheus
+      - Grafana
+    tags:
+      - kubernetes
+      - machine-learning
+      - llm
+      - gpu
+      - gitops
+      - argocd
+      - vllm
+      - inference
+      - monitoring
+      - platform
+      - langfuse
+      - librechat
+      - langflow
+      - datahub
+    complexity: advanced
+    languages:
+      - hcl
+      - yaml
+      - bash
+      - python
+    last_updated: 2026-01-16
+
 # Template for adding new samples:
 #
 #  - name: sample-name
@@ -121,6 +159,5 @@ samples:
 #
 # platform-deployments:
 #   - data-platforms: End-to-end data platform deployments
-#   - ml-platforms: MLOps and ML platform infrastructure
+#   - aiml-platforms: MLOps and AIML platform infrastructure
 #   - analytics-platforms: Complete analytics solutions
-#   - ai-platforms: AI service and infrastructure deployments

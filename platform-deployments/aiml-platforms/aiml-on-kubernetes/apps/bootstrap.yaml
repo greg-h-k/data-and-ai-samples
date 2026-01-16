@@ -1,0 +1,286 @@
+# ============================================================================
+# ArgoCD Bootstrap Configuration
+# ============================================================================
+# This file defines ArgoCD Applications for GitOps deployment.
+#
+# ⚠️ IMPORTANT: Git Repository Configuration Required
+#
+# All applications reference a Git repository for values files. You have
+# two options:
+#
+# OPTION 1: Use Your Own Git Repository (Recommended for GitOps)
+#   - Fork this repository or create your own
+#   - Update ALL occurrences of the repoURL below (lines 30, 59, 91, etc.)
+#   - Replace: git@github.com:greg-h-k/grindstone.git
+#   - With: git@github.com:YOUR_ORG/YOUR_REPO.git (for SSH)
+#   - Or: https://github.com/YOUR_ORG/YOUR_REPO.git (for HTTPS)
+#
+# OPTION 2: Manual Deployment Without GitOps
+#   - Don't use this bootstrap.yaml file
+#   - Apply each application's Helm chart directly using kubectl/helm
+#   - Example:
+#       helm install vllm vllm-stack \
+#         --repo https://vllm-project.github.io/production-stack \
+#         --version 0.1.6 \
+#         --values apps/vllm/values.yaml \
+#         --namespace vllm --create-namespace
+#
+# After updating, apply with:
+#   kubectl apply -f apps/bootstrap.yaml
+# ============================================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm
+  namespace: argocd
+  labels:
+    name: vllm
+spec:
+  project: default
+  sources:
+    # https://github.com/vllm-project/production-stack/blob/main/helm/Chart.yaml
+    - repoURL: https://vllm-project.github.io/production-stack
+      chart: vllm-stack
+      targetRevision: 0.1.6
+      helm:
+        valueFiles:
+        - $values/apps/vllm/values.yaml
+    # ⚠️ UPDATE THIS: Replace with your Git repository URL
+    - repoURL: git@github.com:YOUR_ORG/YOUR_REPO.git  # CHANGE THIS
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vllm
+  syncPolicy:
+    automated: 
+      prune: true 
+      selfHeal: true 
+    syncOptions:  
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-kube-prometheus-stack
+  namespace: argocd
+  labels:
+    name: monitoring-kube-prometheus-stack
+spec:
+  project: default
+  sources:
+    # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/Chart.yaml
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 77.0.0
+      helm:
+        valueFiles:
+        - $values/apps/monitoring/kube-prom-stack.yaml
+    # ⚠️ UPDATE THIS: Replace with your Git repository URL
+    - repoURL: git@github.com:YOUR_ORG/YOUR_REPO.git  # CHANGE THIS
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: 
+      prune: true 
+      selfHeal: true 
+    syncOptions:  
+      - CreateNamespace=true
+      # added due to issues with metadata annotations being too long
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-prometheus-adapter
+  namespace: argocd
+  labels:
+    name: monitoring-prometheus-adapter
+spec:
+  project: default
+  sources:
+    # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-adapter/Chart.yaml
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-adapter
+      targetRevision: 5.1.0
+      helm:
+        valueFiles:
+        - $values/apps/monitoring/prometheus-adapter.yaml
+    # ⚠️ UPDATE THIS: Replace with your Git repository URL
+    - repoURL: git@github.com:YOUR_ORG/YOUR_REPO.git  # CHANGE THIS
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: 
+      prune: true 
+      selfHeal: true 
+    syncOptions:  
+      - CreateNamespace=true
+      # added due to issues with metadata annotations being too long
+      - ServerSideApply=true
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: langfuse
+#   # You'll usually want to add your resources to the argocd namespace.
+#   namespace: argocd
+#   labels:
+#     name: langfuse
+# spec:
+#   # The project the application belongs to.
+#   project: default
+
+#   # Sources field specifies the list of sources for the application
+#   sources:
+#     - repoURL: https://langfuse.github.io/langfuse-k8s  # Can point to either a Helm chart repo or a git repo.
+#       chart: langfuse
+#       targetRevision: 1.2.18  # For Helm, this refers to the chart version.
+#       helm:
+#         valueFiles:
+#         - $values/apps/langfuse/values.yaml
+#     # see https://argo-cd.readthedocs.io/en/latest/user-guide/multiple_sources/#helm-value-files-from-external-git-repository
+#     - repoURL: git@github.com:greg-h-k/grindstone.git
+#       targetRevision: HEAD
+#       ref: values
+
+#   # Destination cluster and namespace to deploy the application
+#   destination:
+#     # cluster API URL
+#     server: https://kubernetes.default.svc
+#     # or cluster name
+#     # name: in-cluster
+#     # The namespace will only be set for namespace-scoped resources that have not set a value for .metadata.namespace
+#     namespace: langfuse
+
+
+#   # Sync policy
+#   syncPolicy:
+#     automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
+#       prune: true # Specifies if resources should be pruned during auto-syncing ( false by default ).
+#       selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
+#     syncOptions:     # Sync options which modifies sync behavior
+#       - CreateNamespace=true # Namespace Auto-Creation ensures that namespace specified as the application destination exists in the destination cluster.
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: langflow-ide
+#   namespace: argocd
+#   labels:
+#     name: langflow-ide
+# spec:
+#   project: default
+#   sources:
+#     - repoURL: https://langflow-ai.github.io/langflow-helm-charts
+#       chart: langflow-ide
+#       targetRevision: 0.1.1
+#       helm:
+#         valueFiles:
+#         - $values/apps/langflow-ide/values.yaml
+#     - repoURL: git@github.com:greg-h-k/grindstone.git
+#       targetRevision: HEAD
+#       ref: values
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: langflow-ide
+#   syncPolicy:
+#     automated: 
+#       prune: true 
+#       selfHeal: true 
+#     syncOptions:  
+#       - CreateNamespace=true
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: datahub-pre
+#   namespace: argocd
+#   labels:
+#     name: datahub-pre
+# spec:
+#   project: default
+#   sources:
+#     - repoURL: https://helm.datahubproject.io/
+#       chart: datahub-prerequisites
+#       targetRevision: 0.1.15
+#       helm:
+#         valueFiles:
+#         - $values/apps/datahub-pre/values.yaml
+#     - repoURL: git@github.com:greg-h-k/grindstone.git
+#       targetRevision: HEAD
+#       ref: values
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: datahub
+#   syncPolicy:
+#     automated: 
+#       prune: true 
+#       selfHeal: true 
+#     syncOptions:  
+#       - CreateNamespace=true
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: datahub
+#   namespace: argocd
+#   labels:
+#     name: datahub
+# spec:
+#   project: default
+#   sources:
+#     - repoURL: https://helm.datahubproject.io/
+#       chart: datahub
+#       targetRevision: 0.6.13
+#       helm:
+#         valueFiles:
+#         - $values/apps/datahub/values.yaml
+#     - repoURL: git@github.com:greg-h-k/grindstone.git
+#       targetRevision: HEAD
+#       ref: values
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: datahub
+#   syncPolicy:
+#     automated: 
+#       prune: true 
+#       selfHeal: true 
+#     syncOptions:  
+#       - CreateNamespace=true
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: librechat
+#   namespace: argocd
+#   labels:
+#     name: librechat
+# spec:
+#   project: default
+#   sources:
+#     - repoURL: https://github.com/danny-avila/LibreChat.git
+#       targetRevision: HEAD
+#       path: helm/librechat
+#       helm:
+#         valueFiles:
+#         - $values/apps/librechat/values.yaml
+#     - repoURL: git@github.com:greg-h-k/grindstone.git
+#       targetRevision: HEAD
+#       ref: values
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: librechat
+#   syncPolicy:
+#     automated: 
+#       prune: true 
+#       selfHeal: true 
+#     syncOptions:  
+#       - CreateNamespace=true
