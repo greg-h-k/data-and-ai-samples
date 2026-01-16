@@ -24,7 +24,6 @@ samples:
     services:
       - Amazon Kinesis Data Streams
       - Amazon Redshift
-      - AWS IAM
     tags:
       - streaming
       - real-time
