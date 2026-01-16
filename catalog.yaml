@@ -62,13 +62,36 @@ samples:
       - bash
     last_updated: 2025-01-14
 
+  - name: postit-demo-deployment
+    title: Posit Analytics Platform Deployment
+    description: Deploy Posit RStudio Server, Shiny Server, and Posit Workbench for data science and analytics workloads
+    path: platform-deployments/analytics-platforms/postit-demo-deployment
+    category: platform-deployments
+    subcategory: analytics-platforms
+    services:
+      - RStudio Server
+      - Shiny Server
+      - Posit Workbench
+    tags:
+      - analytics
+      - data-science
+      - rstudio
+      - shiny
+      - posit
+    complexity: intermediate
+    languages:
+      - bash
+      - r
+      - python
+    last_updated: 2026-01-16
+
 # Template for adding new samples:
 #
 #  - name: sample-name
 #    title: Human Readable Title
 #    description: One-line description of what it does
 #    path: category/subcategory/sample-name
-#    category: data-engineering-and-analytics | machine-learning-and-ai | serverless
+#    category: data-engineering-and-analytics | machine-learning-and-ai | platform-deployments
 #    subcategory: specific-area
 #    services:
 #      - Service 1
@@ -97,7 +120,8 @@ samples:
 #   - computer-vision: Rekognition, custom models
 #   - nlp: Comprehend, Transcribe, Translate
 #
-# serverless:
-#   - api-patterns: API Gateway, Lambda, AppSync
-#   - event-driven: EventBridge, SQS, SNS patterns
-#   - containers: ECS, Fargate serverless patterns
+# platform-deployments:
+#   - data-platforms: End-to-end data platform deployments
+#   - ml-platforms: MLOps and ML platform infrastructure
+#   - analytics-platforms: Complete analytics solutions
+#   - ai-platforms: AI service and infrastructure deployments

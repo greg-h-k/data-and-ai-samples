@@ -11,8 +11,8 @@ This repository contains hands-on examples developed through real-world customer
 | Category | Description |
 |----------|-------------|
 | [Data Engineering & Analytics](./data-engineering-and-analytics/) | ETL pipelines, streaming, data lakes, warehousing |
-| Machine Learning & AI | ML workflows, SageMaker, Bedrock, generative AI |
-| Serverless | Lambda, Step Functions, event-driven architectures |
+| [Machine Learning & AI](./machine-learning-and-ai/) | ML workflows, SageMaker, Bedrock, generative AI |
+| [Platform Deployments](./platform-deployments/) | End-to-end platform and service deployments |
 
 ## Sample Catalog
 
@@ -23,14 +23,14 @@ This repository contains hands-on examples developed through real-world customer
 | [redshift-streaming](./data-engineering-and-analytics/streaming/redshift-streaming/) | Stream data from Kinesis directly into Redshift using native materialized views | Kinesis, Redshift | Intermediate |
 | [msk-multi-region-active-active-demo](./data-engineering-and-analytics/streaming/msk-multi-region-active-active-demo/) | Bidirectional Kafka replication across regions using MSK Serverless and MSK Replicator | Amazon MSK | Intermediate |
 
-<!--
-### Machine Learning & AI
+### Platform Deployments
 
 | Sample | Description | Services | Complexity |
 |--------|-------------|----------|------------|
-| Coming soon | | | |
+| [postit-demo-deployment](./platform-deployments/analytics-platforms/postit-demo-deployment/) | Deploy Posit RStudio Server, Shiny Server, and Posit Workbench for data science workloads | EC2, RStudio, Shiny, Posit Workbench | Intermediate |
 
-### Serverless
+<!--
+### Machine Learning & AI
 
 | Sample | Description | Services | Complexity |
 |--------|-------------|----------|------------|
@@ -83,9 +83,11 @@ data-and-ai-samples/
 │   ├── generative-ai/                  # Bedrock, LLMs, RAG patterns
 │   ├── sagemaker/                      # ML training and deployment
 │   └── computer-vision/                # Image and video analysis
-└── serverless/
-    ├── api-patterns/                   # API Gateway, Lambda patterns
-    └── event-driven/                   # EventBridge, SQS, SNS patterns
+└── platform-deployments/
+    ├── data-platforms/                 # End-to-end data platform deployments
+    ├── ml-platforms/                   # MLOps and ML platform infrastructure
+    ├── analytics-platforms/            # Complete analytics solutions
+    └── ai-platforms/                   # AI service and infrastructure deployments
 ```
 
 ## Contributing

@@ -6,6 +6,30 @@ This file provides guidance for maintaining consistency when adding new samples,
 
 This is a portfolio of AWS samples, demos, and proof-of-concepts covering data engineering, analytics, machine learning, and AI services. Each sample should be self-contained, well-documented, and easy for others to understand and deploy.
 
+## Sample Types
+
+This repository contains two types of samples:
+
+### Task-Specific Samples
+Located in `data-engineering-and-analytics/` and `machine-learning-and-ai/`, these samples demonstrate specific tasks, patterns, or solutions:
+- Focused on solving a particular problem or demonstrating a specific feature
+- Example: Streaming data from Kinesis to Redshift
+- Example: Building a RAG application with Bedrock
+- Usually involve 2-5 AWS services working together
+
+### Platform Deployments
+Located in `platform-deployments/`, these samples deploy complete platforms or services:
+- Full infrastructure and architecture deployments
+- End-to-end platform solutions ready for customization
+- Example: Complete data lakehouse platform with catalog, ETL, and analytics
+- Example: MLOps platform with training pipelines, model registry, and deployment
+- Typically involve 5+ AWS services and multiple integration points
+- Focus on production-ready architecture patterns
+
+When adding a new sample, consider:
+- Is this solving a specific task? → Use task-specific categories
+- Is this deploying a complete platform or service? → Use `platform-deployments/`
+
 ## Directory Structure
 
 ```
@@ -27,10 +51,11 @@ data-and-ai-samples/
 │   ├── sagemaker/                      # Training, deployment, MLOps
 │   ├── computer-vision/                # Rekognition, custom models
 │   └── nlp/                            # Comprehend, Transcribe, Translate
-└── serverless/
-    ├── api-patterns/                   # API Gateway, Lambda, AppSync
-    ├── event-driven/                   # EventBridge, SQS, SNS
-    └── containers/                     # ECS, Fargate serverless patterns
+└── platform-deployments/
+    ├── data-platforms/                 # End-to-end data platform deployments
+    ├── ml-platforms/                   # MLOps and ML platform infrastructure
+    ├── analytics-platforms/            # Complete analytics solutions
+    └── ai-platforms/                   # AI service and infrastructure deployments
 ```
 
 ## Naming Conventions
@@ -54,7 +79,8 @@ data-and-ai-samples/
 Place samples in the most specific applicable subcategory:
 - A Bedrock RAG sample → `machine-learning-and-ai/generative-ai/`
 - A Kinesis to Redshift pipeline → `data-engineering-and-analytics/streaming/`
-- A Lambda API pattern → `serverless/api-patterns/`
+- A full data lakehouse platform deployment → `platform-deployments/data-platforms/`
+- An MLOps platform with SageMaker → `platform-deployments/ml-platforms/`
 
 ## Documentation Standards
 
