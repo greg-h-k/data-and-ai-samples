@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "6.9.0"
+      version = "~> 6.28"
     }
     helm = {
       source  = "hashicorp/helm"
@@ -86,18 +86,12 @@ module "argocd" {
   eks_cluster_name = module.eks.cluster_name
   certificate_arn = var.certificate_arn
   domain = var.domain
-  load_balancer_group_name = "grindstone-ingress"
   route53_zone_id = var.route53_zone_id
 
   providers = {
     kubernetes = kubernetes
     helm = helm
   }
-}
-
-module "ecr" {
-  source = "../../modules/ecr"
-  ecr_repo_name = "grindstone-app"
 }
 
 output "eks_cluster_name" {

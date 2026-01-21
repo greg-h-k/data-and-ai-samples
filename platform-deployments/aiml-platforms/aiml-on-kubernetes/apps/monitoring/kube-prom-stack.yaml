@@ -62,12 +62,14 @@ alertmanager:
 ##
 grafana:
   enabled: true
-  # ⚠️ CRITICAL: Change this password before deployment!
-  # Generate a strong password using:
-  #   openssl rand -base64 20 | tr -d "=+/" | cut -c1-20
-  # Or run the generate-secrets.sh script in the repository root
-  # DO NOT use weak passwords like "prom-operator", "admin", "password", etc.
-  adminPassword: "REPLACE_WITH_GENERATED_GRAFANA_PASSWORD" # MUST BE CHANGED!
+  # Admin credentials managed by External Secrets Operator
+  # Secret synced from AWS Secrets Manager: aiml-platform/monitoring/grafana-admin-password
+  # Apply external-secret.yaml first: kubectl apply -f apps/monitoring/grafana-external-secret.yaml
+  adminUser: admin
+  admin:
+    existingSecret: "grafana-admin-credentials"
+    userKey: admin-user
+    passwordKey: admin-password
 #   affinity:
 #     nodeAffinity:
 #       preferredDuringSchedulingIgnoredDuringExecution:

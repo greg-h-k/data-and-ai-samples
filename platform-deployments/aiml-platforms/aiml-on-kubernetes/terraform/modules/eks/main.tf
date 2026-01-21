@@ -1,4 +1,18 @@
+terraform {
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.23"
+    }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.14"
+    }
+  }
+}
+
 data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -11,6 +25,8 @@ module "eks" {
   subnet_ids = var.subnet_ids
 
   endpoint_public_access = true
+
+  # Enable IRSA (required for External Secrets)
   enable_irsa = true
 
   # eks_managed_node_groups = {
@@ -56,24 +72,85 @@ module "eks" {
   }
 }
 
+################################################################################
+# EKS Blueprints Addons - External Secrets Operator
+################################################################################
 
+module "eks_blueprints_addons" {
+  source  = "aws-ia/eks-blueprints-addons/aws"
+  version = "~> 1.16"
 
-provider "helm" {
-  
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-      command     = "aws"
-    }
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  # Enable External Secrets Operator
+  enable_external_secrets = true
+
+  # Configure External Secrets with IRSA for Secrets Manager access
+  external_secrets = {
+    name             = "external-secrets"
+    chart_version    = "0.10.5"
+    repository       = "https://charts.external-secrets.io"
+    namespace        = "external-secrets"
+    create_namespace = true
+
+    # Service account name that will be annotated with IAM role
+    service_account_name = "external-secrets-sa"
+
+    set = [
+      {
+        name  = "serviceAccount.create"
+        value = "true"
+      },
+      {
+        name  = "serviceAccount.name"
+        value = "external-secrets-sa"
+      }
+    ]
   }
+
+  # Grant access to Secrets Manager secrets
+  external_secrets_secrets_manager_arns = [
+    "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:*"
+  ]
+
+  # Grant access to KMS keys if using CMK encryption
+  # external_secrets_kms_key_arns = var.kms_key_arns
+
+  # tags = var.tags
 }
+
+
+
+# provider "helm" {
+  
+#   kubernetes {
+#     host                   = module.eks.cluster_endpoint
+#     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+#     exec {
+#       api_version = "client.authentication.k8s.io/v1beta1"
+#       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+#       command     = "aws"
+#     }
+#   }
+# }
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    command     = "aws"
+  }
+}
+
+provider "kubectl" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  load_config_file       = false
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
@@ -98,6 +175,9 @@ resource "kubernetes_manifest" "alb_ingress_class_params" {
     }
     spec = {
       scheme = "internet-facing"
+      group = {
+        name = "aiml-platform" # with auto mode, can't use annotations for group https://docs.aws.amazon.com/eks/latest/userguide/auto-configure-alb.html
+      }
     }
   }
 }
@@ -108,6 +188,9 @@ resource "kubernetes_manifest" "alb_ingress_class" {
     kind       = "IngressClass"
     metadata = {
       name = "alb"
+      annotations = {
+        "ingressclass.kubernetes.io/is-default-class" = "true"
+      }
     }
     spec = {
       controller = "eks.amazonaws.com/alb"
@@ -186,7 +269,7 @@ resource "kubernetes_manifest" "node_pool" {
       template = {
         metadata = {
           labels = {
-            "project" = "grindstone"
+            "project" = "aiml-platform"
           }
         }
         spec = {
@@ -227,6 +310,10 @@ resource "kubernetes_manifest" "node_pool" {
       limits = {
         cpu = "32"
         memory = "160Gi"
+      }
+      disruption = {
+        consolidationPolicy = "WhenEmptyOrUnderutilized"
+        consolidateAfter = "30s"
       }
     }
   }

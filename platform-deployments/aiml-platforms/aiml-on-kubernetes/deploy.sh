@@ -18,9 +18,7 @@
 #
 # IMPORTANT BEFORE RUNNING:
 # 1. Update terraform/environments/dev/terraform.tfvars with your values
-# 2. Generate secrets using ./generate-secrets.sh
-# 3. Update secret files in apps/ directories
-# 4. Update application domain names in apps/*/values.yaml
+# 2. Generate secrets 
 #
 # USAGE:
 #     export TERRAFORM_STATE_BUCKET_NAME="my-terraform-state-bucket"
@@ -65,10 +63,17 @@ echo "🚀 Starting Terraform deployment with S3 backend..."
 # Step 1: Create S3 bucket using AWS CLI
 echo "📦 Creating S3 bucket for Terraform state..."
 if ! aws s3api head-bucket --bucket "$TERRAFORM_STATE_BUCKET_NAME" 2>/dev/null; then
-    aws s3api create-bucket \
-        --bucket "$TERRAFORM_STATE_BUCKET_NAME" \
-        --region "$AWS_REGION" \
-        --create-bucket-configuration LocationConstraint="$AWS_REGION"
+    # us-east-1 is special and does not accept LocationConstraint
+    if [ "$AWS_REGION" = "us-east-1" ]; then
+        aws s3api create-bucket \
+            --bucket "$TERRAFORM_STATE_BUCKET_NAME" \
+            --region "$AWS_REGION"
+    else
+        aws s3api create-bucket \
+            --bucket "$TERRAFORM_STATE_BUCKET_NAME" \
+            --region "$AWS_REGION" \
+            --create-bucket-configuration LocationConstraint="$AWS_REGION"
+    fi
     
     aws s3api put-bucket-versioning \
         --bucket "$TERRAFORM_STATE_BUCKET_NAME" \
@@ -97,7 +102,19 @@ terraform init -upgrade \
   -backend-config="key=${STATE_KEY}" \
   -backend-config="region=${AWS_REGION}"
 
+# Two-stage deployment to handle kubernetes provider dependency
+echo ""
+echo "📦 Stage 1: Creating VPC and EKS cluster..."
+terraform apply -auto-approve \
+  -target=module.baseline_environment_network \
+  -target=module.eks.module.eks
 
+echo ""
+echo "⏳ Waiting 30 seconds for EKS cluster to stabilize..."
+sleep 30
+
+echo ""
+echo "🔧 Stage 2: Deploying Kubernetes resources and remaining infrastructure..."
 terraform apply -auto-approve
 
 # Step 3: Configure kubectl
@@ -105,7 +122,20 @@ echo "⚙️  Configuring kubectl..."
 EKS_CLUSTER_NAME=$(terraform output -raw eks_cluster_name)
 aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}
 
+echo ""
+echo "🔐 Creating ClusterSecretStore for AWS Secrets Manager..."
+cd ../../..
+kubectl apply -f apps/external-secrets-operator/cluster-secret-store.yaml
+
+echo "⏳ Waiting for ClusterSecretStore to be ready..."
+kubectl wait --for=condition=Ready clustersecretstore/aws-secrets-manager --timeout=60s || {
+    echo "⚠️  ClusterSecretStore not ready yet. Check status with:"
+    echo "    kubectl describe clustersecretstore aws-secrets-manager"
+}
+
+echo ""
 echo "🎉 Deployment completed successfully!"
 echo "📍 Terraform state is stored in: s3://${TERRAFORM_STATE_BUCKET_NAME}/${STATE_KEY}"
 echo "🔧 kubectl configured for cluster: ${EKS_CLUSTER_NAME}"
 echo "✅ Test cluster access: kubectl get nodes"
+echo "🔐 Verify ClusterSecretStore: kubectl get clustersecretstore aws-secrets-manager"

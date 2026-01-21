@@ -1,3 +1,16 @@
+terraform {
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+  }
+}
+
 resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
@@ -52,8 +65,6 @@ resource "kubernetes_manifest" "argocd-ingress" {
         "alb.ingress.kubernetes.io/scheme"           = "internet-facing"
         "alb.ingress.kubernetes.io/target-type"      = "ip"
         "alb.ingress.kubernetes.io/certificate-arn" = var.certificate_arn
-        # applying common group name to allow same ALB to be used across different ingress'
-        "alb.ingress.kubernetes.io/group.name" = var.load_balancer_group_name
       }
       "name"      = "argocd"
       "namespace" = "argocd"

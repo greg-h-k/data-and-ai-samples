@@ -84,39 +84,6 @@ samples:
       - python
     last_updated: 2026-01-16
 
-  - name: aiml-on-kubernetes
-    title: AI/ML Platform on Amazon EKS
-    description: Production-ready AI/ML platform on EKS with GPU support, GitOps deployment, and integrated observability stack
-    path: platform-deployments/aiml-platforms/aiml-on-kubernetes
-    category: platform-deployments
-    subcategory: aiml-platforms
-    services:
-      - Amazon EKS
-      - Amazon VPC
-      - Amazon Route 53
-      - Amazon ACM
-      - AWS Secrets Manager
-      - ArgoCD
-      - Prometheus
-      - Grafana
-    tags:
-      - kubernetes
-      - machine-learning
-      - llm
-      - gpu
-      - gitops
-      - argocd
-      - platform
-      - eks-auto-mode
-      - secrets-management
-      - monitoring
-    complexity: advanced
-    languages:
-      - hcl
-      - yaml
-      - bash
-    last_updated: 2026-01-21
-
   - name: vllm-inference-server
     title: vLLM - High-Performance LLM Inference Server
     description: GPU-accelerated LLM serving with OpenAI-compatible API for production inference workloads
@@ -125,18 +92,16 @@ samples:
     subcategory: aiml-platforms
     services:
       - Amazon EKS
-      - NVIDIA GPU
+      - vLLM
     tags:
       - llm
       - inference
       - vllm
       - gpu
-      - openai-api
       - model-serving
       - machine-learning
-    complexity: intermediate
+    complexity: advanced
     languages:
-      - yaml
       - python
     last_updated: 2026-01-21
 
@@ -162,7 +127,6 @@ samples:
       - cost-tracking
     complexity: intermediate
     languages:
-      - yaml
       - sql
     last_updated: 2026-01-21
 
