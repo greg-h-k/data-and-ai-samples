@@ -1,3 +1,9 @@
 .DS_Store
 .terraform
 .terraform.lock.hcl
+
+terraform.tfvars
+
+# Helm values files with actual configuration (use values.example.yaml as template)
+**/apps/*/values.yaml
+!**/apps/*/values.example.yaml

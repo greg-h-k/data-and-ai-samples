@@ -1,49 +1,23 @@
 # AI/ML Platform on Amazon EKS
 
-> **Services:** Amazon EKS, Amazon VPC, Amazon Route 53, Amazon ACM, Amazon ECR, ArgoCD, Prometheus, Grafana
-> **Complexity:** Advanced
-> **Last Updated:** 2026-01-16
+The purpose of this sample is to show how you can quickly deploy AI/ML related applications on Amazon EKS with automated GitOps deployment via ArgoCD. 
 
-Production-ready AI/ML platform on Amazon EKS with GPU support, automated GitOps deployment via ArgoCD, and integrated observability stack.
-
-## ⚠️ Important Security Notice
-
-**This is a demonstration deployment for development and testing purposes.**
-
-Before deploying to production environments, you must:
-- Remove all placeholder credentials and generate strong secrets
-- Update all domain names and AWS account-specific values in configuration files
-- Review and harden security group rules for least-privilege access
-- Enable CloudTrail and VPC Flow Logs for audit trails
-- Implement proper backup and disaster recovery procedures
-- Configure RBAC for Kubernetes and ArgoCD with principle of least privilege
-- Use AWS Secrets Manager or External Secrets Operator for secret management
-- Enable EKS audit logging and review logs regularly
-- Restrict EKS API endpoint access to specific IP ranges
-- Implement Pod Security Standards (PSS/PSA)
-- Configure Network Policies to restrict pod-to-pod communication
-- Enable container image scanning in ECR
-- Review [EKS Best Practices Guide](https://aws.github.io/aws-eks-best-practices/)
-
-**DO NOT use example passwords or configurations shown in this demo in production.**
+**This is a demonstration deployment for development and testing purposes.The deployed apps do not have user authentication and authorization configured, this is for ease of demo only. You must protect access to the applications.**
 
 ## Overview
 
 ### What This Platform Provides
 
-This platform deploys a complete AI/ML infrastructure on Kubernetes, suitable for LLM inference, model serving, data observability, and team collaboration on ML workloads.
+This repo shows how you can deploy a variety of related AI applications on Kubernetes, focusing on common AI requirements such as building AI powered workflows, serving internal chat based apps, serving LLMs for inference and moniroting these models.
 
-**Core Infrastructure:**
+**Core Components:**
 - **Amazon EKS** with EKS Auto Mode - Managed Kubernetes cluster with automatic compute provisioning
 - **GPU Node Pool** - g4dn instances with NVIDIA T4 GPUs for model inference workloads
-- **Application Load Balancer** - Automatic ingress with SSL/TLS termination via AWS Load Balancer Controller
-- **VPC with 3 Availability Zones** - High availability network architecture with public and private subnets
 - **ArgoCD** - GitOps continuous deployment for declarative application management
 
 **AI/ML Applications** (optional, can be enabled/disabled individually):
 - **vLLM** - High-performance LLM inference serving with OpenAI-compatible API
 - **Langfuse** - LLM observability and analytics for tracking prompts, costs, and performance
-- **LibreChat** - Multi-model AI chat interface supporting OpenAI, Azure, Anthropic, and custom endpoints
 - **Langflow IDE** - Visual LLM workflow builder for creating RAG pipelines and AI agents
 - **DataHub** - Data discovery and metadata catalog for data governance
 
@@ -90,7 +64,6 @@ This platform deploys a complete AI/ML infrastructure on Kubernetes, suitable fo
 │  │  │ │  - monitoring (Prometheus/Grafana)                │   │  │ │
 │  │  │ │  - vllm (LLM inference serving)                   │   │  │ │
 │  │  │ │  - langfuse (LLM observability)                   │   │  │ │
-│  │  │ │  - librechat (Chat interface)                     │   │  │ │
 │  │  │ │  - langflow-ide (Workflow builder)                │   │  │ │
 │  │  │ │  - datahub (Data catalog)                         │   │  │ │
 │  │  │ └─────────────────────────────────────────────────────┘   │  │ │
@@ -112,6 +85,8 @@ This platform deploys a complete AI/ML infrastructure on Kubernetes, suitable fo
 
 ### AWS Requirements
 
+The sample inlcudes showing how you can register the applications with host names on Route 53, this is optional and you can override this if you prefer. 
+
 1. **AWS Account** with permissions to create:
    - VPC, subnets, NAT gateways, Internet gateways, Application Load Balancers
    - EKS clusters (with EKS Auto Mode enabled in your region)
@@ -121,7 +96,7 @@ This platform deploys a complete AI/ML infrastructure on Kubernetes, suitable fo
    - ECR repositories for container images
 
 2. **ACM Certificate** in target region:
-   - Must cover your domain (wildcard recommended: `*.your-domain.com`)
+   - Must cover your domain (for example: `*.your-domain.com`)
    - Must be validated (DNS or email validation) before deployment
    - Certificate ARN will be needed for `terraform.tfvars`
 
@@ -131,7 +106,7 @@ This platform deploys a complete AI/ML infrastructure on Kubernetes, suitable fo
    - Ensure NS records are properly delegated if using subdomain
 
 4. **IAM Admin Role**:
-   - Role with AdministratorAccess or equivalent permissions
+   - Role that serves as amdministrator with relevant permissions to access and manage resources
    - Note the ARN (format: `arn:aws:iam::ACCOUNT_ID:role/RoleName`)
    - This role will have admin access to the EKS cluster
 
@@ -155,42 +130,31 @@ Install the following tools on your workstation:
 
 **Critical steps you MUST complete before running `./deploy.sh`:**
 
-1. **Update terraform.tfvars** with your AWS account values:
-   ```bash
-   cd terraform/environments/dev
-   vim terraform.tfvars
-   ```
+1. **Create terraform.tfvars** from the example with your AWS account values:
    Update:
    - AWS region
    - IAM admin role ARN (your account ID and role name)
+
+   If you want to use Route53:
    - ACM certificate ARN (your account ID and certificate ID)
    - Route 53 zone ID (from your hosted zone)
    - Your domain name
 
 2. **Generate secrets** for all applications:
    ```bash
-   # From repository root
-   ./generate-secrets.sh > my-secrets.txt
-
-   # IMPORTANT: Save my-secrets.txt securely (password manager)
-   # DO NOT commit my-secrets.txt to version control
+   # From sample root
+   ./generate-and-upload-secrets.sh
    ```
 
-3. **Update secret files** with generated values:
-   - `apps/langfuse/secret.yaml`
-   - `apps/librechat/libre_chat_secret.yaml`
-   - `apps/datahub-pre/my_sql_secret.yaml`
-   - `apps/monitoring/kube-prom-stack.yaml`
-
-4. **Update application domains** in values files:
+3. **Update application domains** in values files, this ensures the ingress works with your domain. Note this sample is configured with internet-facing egress. You can limit access to your IP address via the load balancer security group, but you may want to update the ingress specifications and the alb ingress class to suit your requirements. 
    - `apps/langfuse/values.yaml` - Replace `langfuse.your-domain.example.com`
-   - `apps/librechat/values.yaml` - Replace `chat.your-domain.example.com`
    - `apps/langflow-ide/values.yaml` - Replace `langflow-ide.your-domain.example.com`
    - `apps/datahub/values.yaml` - Replace `datahub.your-domain.example.com`
 
 5. **Customize bootstrap.yaml** for your Git repository (if using GitOps):
-   - Option 1: Update all `repoURL` entries with your Git repository
-   - Option 2: Skip bootstrap.yaml and deploy applications manually with Helm
+   - If using ArgoCD, commit the updated values files to your repo so they can be accessed GitOps deployment
+   - Using ArgoCD GitOps approach, Argo will sync changes from your Git repo and apply them to your kubernetes cluster. 
+   - Ensure to add your repository to ArgoCD and to update the repo link in the bootstrap file. 
 
 ## Quick Start
 
@@ -201,24 +165,29 @@ Install the following tools on your workstation:
 cd terraform/environments/dev
 
 # Edit terraform.tfvars with your values
+cp terraform.example.tfvars terraform.tfvars
 vim terraform.tfvars
 
 # Update ALL values marked with YOUR_ACCOUNT_ID, YOUR_CERT_ID, etc.
 # See Prerequisites section above for what each value should be
 ```
 
-### Step 2: Generate Secrets
+### Step 2: Generate and Upload Secrets to AWS Secrets Manager
+
+The platform uses **AWS Secrets Manager** with **External Secrets Operator** for automatic secret injection. Secrets are generated and stored securely in AWS, then automatically synced to Kubernetes.
+
+Back in the sample root:
 
 ```bash
-# From repository root
-./generate-secrets.sh > my-secrets.txt
+# Generate random secrets and upload to AWS Secrets Manager
+./generate-and-upload-secrets.sh --region us-east-1
 
-# Store securely - you'll need these values
-# DO NOT commit my-secrets.txt to version control
-
-# Update secret files with generated values
-# See "Before Deployment" section for list of files
+# The script will create 16 secrets in AWS Secrets Manager:
+# - aiml-platform/langfuse/* (8 secrets)
+# - aiml-platform/datahub/* (2 secrets)
+# - aiml-platform/monitoring/* (1 secret)
 ```
+
 
 ### Step 3: Deploy Infrastructure
 
@@ -229,7 +198,7 @@ export AWS_REGION="us-east-1"
 
 # Review what will be created (optional but recommended)
 cd terraform/environments/dev
-terraform init
+terraform init -upgrade
 terraform plan
 
 # Deploy (takes ~15-20 minutes)
@@ -243,7 +212,9 @@ This will:
 3. Create VPC with public/private subnets across 3 AZs
 4. Create EKS cluster with Auto Mode enabled
 5. Deploy AWS Load Balancer Controller
-6. Configure kubectl to access the cluster (~15-20 minutes total)
+6. Deploy External Secrets Operator with IAM role for AWS Secrets Manager access
+7. Create ClusterSecretStore for secret synchronization
+8. Configure kubectl to access the cluster (~15-20 minutes total)
 
 ### Step 4: Verify Cluster Access
 
@@ -256,6 +227,13 @@ kubectl get pods -A
 
 # Verify ArgoCD is running
 kubectl get pods -n argocd
+
+# Verify External Secrets Operator is running
+kubectl get pods -n external-secrets
+
+# Verify ClusterSecretStore is ready
+kubectl get clustersecretstore aws-secrets-manager
+# Expected: STATUS should show "Valid" and READY should be "True"
 ```
 
 ### Step 5: Access ArgoCD
@@ -276,24 +254,250 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # ⚠️ IMPORTANT: Change the default admin password after first login
 ```
 
-### Step 6: Deploy Applications with ArgoCD
+### Step 5.5: Verify Secret Management Infrastructure
+
+Before deploying applications, verify that the secret management components are ready:
 
 ```bash
-# Option 1: Using GitOps (requires updating bootstrap.yaml with your Git repo)
+# Check External Secrets Operator is running
+kubectl get pods -n external-secrets
+
+# Verify ClusterSecretStore exists and is ready
+kubectl get clustersecretstore aws-secrets-manager
+
+# Check detailed status (should show Conditions: Ready=True)
+kubectl describe clustersecretstore aws-secrets-manager
+
+# Expected output should include:
+# Status:
+#   Conditions:
+#     Status:  True
+#     Type:    Ready
+```
+
+**If the ClusterSecretStore is missing or not ready:**
+
+```bash
+# Apply the ClusterSecretStore manually
+kubectl apply -f apps/external-secrets-operator/cluster-secret-store.yaml
+
+# Wait for it to become ready
+kubectl wait --for=condition=Ready clustersecretstore/aws-secrets-manager --timeout=60s
+
+# If it still doesn't become ready, check ESO logs
+kubectl logs -n external-secrets deployment/external-secrets --tail=50
+```
+
+**Common issues:**
+- IRSA not configured: Check service account has IAM role annotation
+  ```bash
+  kubectl get sa external-secrets-sa -n external-secrets -o yaml | grep eks.amazonaws.com/role-arn
+  ```
+- Region mismatch: Ensure the region in the ClusterSecretStore matches where your secrets are stored
+- IAM permissions: Verify the IAM role has `secretsmanager:GetSecretValue` permission
+
+### Step 6: Deploy ExternalSecrets
+
+Before deploying applications, apply the ExternalSecret manifests to sync secrets from AWS Secrets Manager:
+
+```bash
+# Create namespaces
+kubectl create namespace langfuse --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace datahub --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+# Apply ExternalSecret resources
+kubectl apply -f apps/langfuse/external-secret.yaml
+kubectl apply -f apps/datahub-pre/mysql-external-secret.yaml
+kubectl apply -f apps/datahub-pre/neo4j-external-secret.yaml
+kubectl apply -f apps/monitoring/grafana-external-secret.yaml
+
+# Verify secrets are synced (Status should be "SecretSynced")
+kubectl get externalsecrets -A
+
+# Verify Kubernetes secrets were created
+kubectl get secrets -n langfuse langfuse
+kubectl get secrets -n datahub mysql-secrets
+kubectl get secrets -n datahub neo4j-secrets
+kubectl get secrets -n monitoring grafana-admin-credentials
+```
+
+### Step 7: Deploy Applications with ArgoCD
+
+With secrets synced, deploy the applications:
+
+**Option 1: Using GitOps with ArgoCD (Recommended)**
+
+Requires updating bootstrap.yaml with your Git repository URL, adding your repository to ArgoCD and pushing the project with your updated value.yaml files to your repo:
+
+```bash
 kubectl apply -f apps/bootstrap.yaml
+```
 
-# Option 2: Deploy individual applications manually
-kubectl apply -f apps/langfuse/secret.yaml
-kubectl apply -f apps/librechat/libre_chat_secret.yaml
-kubectl apply -f apps/datahub-pre/my_sql_secret.yaml
+**Option 2: Deploy Individual Applications Manually via Helm**
 
-# Then deploy via Helm (example for vLLM)
+Deploy applications one-by-one using Helm. Secrets are already created by ExternalSecrets in the previous step.
+
+**IMPORTANT - First-time setup:**
+```bash
+# Copy example values files and customize with your configuration
+cd apps/<application>/
+cp values.example.yaml values.yaml
+vim values.yaml  # Update domain names, certificate ARNs, etc.
+```
+
+See [apps/README.md](apps/README.md) for detailed configuration instructions.
+
+**vLLM (LLM Inference Server):**
+```bash
 helm install vllm vllm-stack \
   --repo https://vllm-project.github.io/production-stack \
   --version 0.1.6 \
   --values apps/vllm/values.yaml \
   --namespace vllm --create-namespace
 ```
+
+**Langfuse (LLM Observability):**
+```bash
+helm install langfuse langfuse \
+  --repo https://langfuse.github.io/langfuse-k8s \
+  --version 1.2.18 \
+  --values apps/langfuse/values.yaml \
+  --namespace langfuse --create-namespace
+```
+
+**Langflow IDE (Visual AI Workflow Builder):**
+```bash
+helm install langflow-ide langflow-ide \
+  --repo https://langflow-ai.github.io/langflow-helm-charts \
+  --version 0.1.1 \
+  --values apps/langflow-ide/values.yaml \
+  --namespace langflow-ide --create-namespace
+```
+
+**DataHub (Data Catalog and Governance):**
+
+DataHub requires two-step deployment. Deploy prerequisites first:
+
+```bash
+# Step 1: Deploy DataHub prerequisites (MySQL, Neo4j, Elasticsearch, Kafka)
+helm install datahub-prerequisites datahub-prerequisites \
+  --repo https://helm.datahubproject.io/ \
+  --version 0.1.15 \
+  --values apps/datahub-pre/values.yaml \
+  --namespace datahub --create-namespace
+
+# Wait for prerequisites to be ready (can take 5-10 minutes)
+kubectl get pods -n datahub -w
+
+# Step 2: Deploy DataHub main application
+helm install datahub datahub \
+  --repo https://helm.datahubproject.io/ \
+  --version 0.6.13 \
+  --values apps/datahub/values.yaml \
+  --namespace datahub
+```
+
+**Monitoring Stack (Prometheus + Grafana):**
+
+```bash
+# Deploy Prometheus and Grafana
+helm install kube-prometheus-stack kube-prometheus-stack \
+  --repo https://prometheus-community.github.io/helm-charts \
+  --version 77.0.0 \
+  --values apps/monitoring/kube-prom-stack.yaml \
+  --namespace monitoring --create-namespace
+
+# Deploy Prometheus Adapter (for custom metrics)
+helm install prometheus-adapter prometheus-adapter \
+  --repo https://prometheus-community.github.io/helm-charts \
+  --version 5.1.0 \
+  --values apps/monitoring/prometheus-adapter.yaml \
+  --namespace monitoring
+```
+
+## Secret Management Architecture
+
+This platform uses **External Secrets Operator (ESO)** to automatically sync secrets from AWS Secrets Manager to Kubernetes, eliminating manual secret handling and enabling GitOps-friendly workflows.
+
+### How It Works
+
+```
+┌────────────────────────────┐
+│  AWS Secrets Manager       │
+│  aiml-platform/langfuse/*  │ ─┐
+│  aiml-platform/datahub/*   │  │  IRSA (IAM Role for Service Account)
+│  aiml-platform/monitoring/*│  │  ESO pod authenticates with AWS
+└────────────────────────────┘  │
+                                │
+                                ▼
+┌────────────────────────────────────────────────────┐
+│  ClusterSecretStore (aws-secrets-manager)          │
+│  - Cluster-wide configuration                      │
+│  - Provides AWS authentication context             │
+│  - References IRSA service account                 │
+└─────────────────────────┬──────────────────────────┘
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│  External Secrets Operator (ESO)                   │
+│  - Runs in external-secrets namespace              │
+│  - Polls AWS Secrets Manager every hour            │
+│  - Creates/updates Kubernetes Secrets              │
+└─────────────────────────┬──────────────────────────┘
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│  ExternalSecret Resources (per-application)        │
+│  langfuse/external-secret                          │
+│  datahub-pre/mysql-external-secret                 │
+│  datahub-pre/neo4j-external-secret                 │
+│  monitoring/grafana-external-secret                │
+└─────────────────────────┬──────────────────────────┘
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│  Kubernetes Secrets (auto-created)                 │
+│  langfuse/langfuse                                 │
+│  datahub/mysql-secrets, datahub/neo4j-secrets     │
+│  monitoring/grafana-admin-credentials              │
+└─────────────────────────┬──────────────────────────┘
+                          │
+                          ▼
+                    Application Pods
+```
+
+### Benefits
+
+- **No manual secret file editing** - Secrets never touch Git or local files
+- **Centralized management** - All secrets in AWS Secrets Manager
+- **Automatic synchronization** - Changes in AWS propagate to Kubernetes within 1 hour
+- **Rotation support** - Update secrets in AWS, ESO syncs automatically
+- **Audit trail** - CloudTrail logs all secret access
+- **GitOps-friendly** - ExternalSecret manifests (references, not values) checked into Git
+
+### Rotating a Secret
+
+```bash
+# 1. Update in AWS Secrets Manager
+aws secretsmanager update-secret \
+  --secret-id aiml-platform/langfuse/postgresql-password \
+  --secret-string 'NEW_SECURE_PASSWORD' \
+  --region us-east-1
+
+# 2. ESO syncs within 1 hour (or force immediate sync)
+kubectl annotate externalsecret langfuse -n langfuse \
+  force-sync=$(date +%s) --overwrite
+
+# 3. Restart application to use new secret
+kubectl rollout restart deployment -n langfuse
+```
+
+### Cost
+
+- **AWS Secrets Manager**: $0.40/month per secret × 16 secrets = **~$6.40/month**
+- **API calls**: $0.05 per 10,000 calls (likely within free tier with 1h refresh)
+- **External Secrets Operator**: Free (open source, runs on existing EKS nodes)
 
 ## Application Details
 
@@ -380,31 +584,6 @@ generation = trace.generation(
 
 **Documentation**: [Langfuse Docs](https://langfuse.com/docs)
 
----
-
-### LibreChat - Multi-Model Chat Interface
-
-**Purpose**: User-friendly chat interface supporting multiple LLM providers
-
-**Key Features**:
-- Multi-model support: OpenAI, Azure OpenAI, Anthropic, custom endpoints
-- Conversation history with search
-- File uploads (documents, images)
-- Plugin system for extending functionality
-- User authentication and role-based access
-
-**Required Configuration**:
-- Update `libre_chat_secret.yaml` with API keys for LLM providers
-- For Azure OpenAI: Update `AZURE_API_KEY` in secret
-
-**Access**: `https://chat.your-domain.com`
-
-**User Management**:
-- First user to register becomes admin
-- Additional users can be invited by admin
-- Supports LDAP/SAML integration (configuration required)
-
-**Documentation**: [LibreChat Docs](https://www.librechat.ai/docs)
 
 ---
 
@@ -474,8 +653,7 @@ generation = trace.generation(
 - **Prometheus Adapter**: Exposes custom metrics for Horizontal Pod Autoscaler (HPA)
 
 **Default Credentials**:
-- Grafana username: `admin`
-- Grafana password: **CHANGE THIS** in `apps/monitoring/kube-prom-stack.yaml`
+Retrieve from cluster or AWS secrets manager. 
 
 **Access Locally**:
 ```bash
@@ -500,147 +678,6 @@ kubectl port-forward -n monitoring \
 1. Log into Grafana
 2. Create dashboard or import from [Grafana Dashboards](https://grafana.com/grafana/dashboards/)
 3. Recommended: Import dashboard for NVIDIA DCGM Exporter (ID: 12239)
-
----
-
-## Security Considerations
-
-### ⚠️ This is a Demo Configuration
-
-This AI/ML platform deployment demonstrates high availability patterns and GitOps workflows, but is **NOT production-ready** without additional hardening. Address these critical security considerations before production use:
-
-### Known Limitations
-
-1. **EKS API Public Endpoint** - No IP restrictions (anyone can attempt authentication)
-   - **Risk**: Exposed to internet-wide scanning and brute force attempts
-   - **Fix**: Add `endpoint_public_access_cidrs` to restrict to your office/VPN IPs
-
-2. **Secrets in Git** - Placeholder files tracked in version control
-   - **Risk**: Easy to accidentally commit real secrets
-   - **Fix**: Use External Secrets Operator to inject from AWS Secrets Manager
-
-3. **Weak Default Passwords** - Must be changed before deployment
-   - Grafana: `REPLACE_WITH_GENERATED_GRAFANA_PASSWORD`
-   - MySQL: `REPLACE_WITH_GENERATED_MYSQL_PASSWORD`
-   - Langfuse: Multiple passwords in `secret.yaml`
-
-4. **Single Region** - No cross-region disaster recovery
-   - **Risk**: Regional AWS outage causes complete downtime
-   - **Fix**: Implement multi-region active-passive or active-active
-
-5. **No Pod Security Standards** - Pods can run as root with any capabilities
-   - **Risk**: Container breakout could compromise node
-   - **Fix**: Implement Pod Security Standards (PSS) in enforcing mode
-
-6. **No Network Policies** - All pods can communicate freely within cluster
-   - **Risk**: Lateral movement after pod compromise
-   - **Fix**: Implement NetworkPolicies to segment namespaces
-
-7. **No Resource Quotas** - Unlimited resource usage per namespace
-   - **Risk**: Runaway pod could exhaust cluster resources
-   - **Fix**: Add ResourceQuotas and LimitRanges per namespace
-
-8. **No Backup Configuration** - Databases have no automated backups
-   - **Risk**: Data loss is permanent and unrecoverable
-   - **Fix**: Configure Velero for cluster backups, enable database snapshots
-
-### Recommended Production Enhancements
-
-1. **Restrict EKS API Access**
-   ```hcl
-   # In terraform configuration
-   cluster_endpoint_public_access_cidrs = ["YOUR_OFFICE_IP/32"]
-   ```
-
-2. **Implement External Secrets Operator**
-   ```yaml
-   # Store secrets in AWS Secrets Manager
-   # Use ExternalSecret CRDs to inject into pods
-   apiVersion: external-secrets.io/v1beta1
-   kind: ExternalSecret
-   metadata:
-     name: langfuse-secrets
-   spec:
-     secretStoreRef:
-       name: aws-secrets-manager
-     target:
-       name: langfuse
-     data:
-     - secretKey: salt
-       remoteRef:
-         key: aiml-platform/langfuse/salt
-   ```
-
-3. **Enable EKS Audit Logging**
-   ```hcl
-   enabled_cluster_log_types = ["audit", "api", "authenticator"]
-   ```
-
-4. **Configure Pod Security Standards**
-   ```yaml
-   # Apply to all namespaces except kube-system
-   apiVersion: v1
-   kind: Namespace
-   metadata:
-     name: vllm
-     labels:
-       pod-security.kubernetes.io/enforce: restricted
-       pod-security.kubernetes.io/warn: restricted
-   ```
-
-5. **Implement Network Policies**
-   ```yaml
-   # Example: Isolate vLLM namespace
-   apiVersion: networking.k8s.io/v1
-   kind: NetworkPolicy
-   metadata:
-     name: vllm-isolation
-     namespace: vllm
-   spec:
-     podSelector: {}
-     policyTypes:
-     - Ingress
-     ingress:
-     - from:
-       - namespaceSelector:
-           matchLabels:
-             name: monitoring
-   ```
-
-6. **Add Resource Quotas**
-   ```yaml
-   apiVersion: v1
-   kind: ResourceQuota
-   metadata:
-     name: vllm-quota
-     namespace: vllm
-   spec:
-     hard:
-       requests.cpu: "20"
-       requests.memory: 100Gi
-       requests.nvidia.com/gpu: "2"
-   ```
-
-7. **Configure Database Backups**
-   - Install Velero for cluster-wide backups
-   - Enable automated snapshots for RDS (if migrating from pod-based DBs)
-   - Test restore procedures regularly
-
-8. **Enable Container Image Scanning**
-   - Enable ECR image scanning on push
-   - Configure admission controller to block images with critical CVEs
-
-9. **Implement RBAC for ArgoCD**
-   - Create separate ArgoCD projects per team
-   - Restrict access to production namespaces
-   - Enable SSO with corporate identity provider
-
-10. **Set up CloudWatch Container Insights**
-    ```bash
-    # Deploy Container Insights
-    aws eks create-addon --cluster-name aiml-platform-cluster \
-      --addon-name amazon-cloudwatch-observability
-    ```
 
 ---
 
@@ -725,6 +762,29 @@ Estimated monthly costs for running this platform (us-east-1 pricing, as of Janu
    ```bash
    aws eks list-clusters --region us-east-1
    kubectl config current-context
+   ```
+
+3. **Delete secrets from AWS Secrets Manager** (to avoid ongoing costs of ~$6.40/month):
+   ```bash
+   # List all platform secrets
+   aws secretsmanager list-secrets \
+     --filters Key=name,Values=aiml-platform/ \
+     --region us-east-1 \
+     --query 'SecretList[].Name' \
+     --output text
+
+   # Delete all secrets at once (force delete without recovery window)
+   for secret in $(aws secretsmanager list-secrets \
+     --filters Key=name,Values=aiml-platform/ \
+     --region us-east-1 \
+     --query 'SecretList[].Name' \
+     --output text); do
+     echo "Deleting $secret"
+     aws secretsmanager delete-secret \
+       --secret-id "$secret" \
+       --force-delete-without-recovery \
+       --region us-east-1
+   done
    ```
 
 ### Destroy Infrastructure
@@ -953,7 +1013,6 @@ aws ec2 delete-volume --volume-id <volume-id>
 ### AI/ML Tools
 - [vLLM Documentation](https://docs.vllm.ai/)
 - [Langfuse Documentation](https://langfuse.com/docs)
-- [LibreChat Documentation](https://www.librechat.ai/docs)
 - [Langflow Documentation](https://docs.langflow.org/)
 - [DataHub Documentation](https://datahubproject.io/docs)
 

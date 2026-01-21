@@ -20,9 +20,8 @@ serviceAccount:
 ingress:
   enabled: true
   annotations: 
-    # use group name to join existing load balancer 
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/group.name: grindstone-ingress
+    # the alb ingress class now configured with common group name value
+    # alb.ingress.kubernetes.io/group.name: 
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -94,6 +93,8 @@ langflow:
         value: "/app/db/alembic.log"
       - name: LANGFLOW_UPDATE_STARTER_PROJECTS
         value: "false"
+      - name: LANGFLOW_SKIP_AUTH_AUTO_LOGIN
+        value: "true"
     nodeSelector: {}
     tolerations: []
     affinity: {}

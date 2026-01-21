@@ -86,7 +86,7 @@ samples:
 
   - name: aiml-on-kubernetes
     title: AI/ML Platform on Amazon EKS
-    description: Production-ready AI/ML platform on EKS with GPU support, vLLM inference, ArgoCD GitOps, and integrated observability
+    description: Production-ready AI/ML platform on EKS with GPU support, GitOps deployment, and integrated observability stack
     path: platform-deployments/aiml-platforms/aiml-on-kubernetes
     category: platform-deployments
     subcategory: aiml-platforms
@@ -95,7 +95,7 @@ samples:
       - Amazon VPC
       - Amazon Route 53
       - Amazon ACM
-      - Amazon ECR
+      - AWS Secrets Manager
       - ArgoCD
       - Prometheus
       - Grafana
@@ -106,21 +106,116 @@ samples:
       - gpu
       - gitops
       - argocd
-      - vllm
-      - inference
-      - monitoring
       - platform
-      - langfuse
-      - librechat
-      - langflow
-      - datahub
+      - eks-auto-mode
+      - secrets-management
+      - monitoring
     complexity: advanced
     languages:
       - hcl
       - yaml
       - bash
+    last_updated: 2026-01-21
+
+  - name: vllm-inference-server
+    title: vLLM - High-Performance LLM Inference Server
+    description: GPU-accelerated LLM serving with OpenAI-compatible API for production inference workloads
+    path: platform-deployments/aiml-platforms/aiml-on-kubernetes/apps/vllm
+    category: platform-deployments
+    subcategory: aiml-platforms
+    services:
+      - Amazon EKS
+      - NVIDIA GPU
+    tags:
+      - llm
+      - inference
+      - vllm
+      - gpu
+      - openai-api
+      - model-serving
+      - machine-learning
+    complexity: intermediate
+    languages:
+      - yaml
       - python
-    last_updated: 2026-01-16
+    last_updated: 2026-01-21
+
+  - name: langfuse-llm-observability
+    title: Langfuse - LLM Observability and Analytics
+    description: Track, monitor, and analyze LLM prompts, costs, latency, and quality for AI applications
+    path: platform-deployments/aiml-platforms/aiml-on-kubernetes/apps/langfuse
+    category: platform-deployments
+    subcategory: aiml-platforms
+    services:
+      - Amazon EKS
+      - PostgreSQL
+      - ClickHouse
+      - Redis
+    tags:
+      - llm
+      - observability
+      - monitoring
+      - tracing
+      - analytics
+      - langfuse
+      - prompt-management
+      - cost-tracking
+    complexity: intermediate
+    languages:
+      - yaml
+      - sql
+    last_updated: 2026-01-21
+
+  - name: langflow-ide
+    title: Langflow IDE - Visual AI Workflow Builder
+    description: No-code/low-code visual builder for creating RAG pipelines, AI agents, and LLM workflows
+    path: platform-deployments/aiml-platforms/aiml-on-kubernetes/apps/langflow-ide
+    category: platform-deployments
+    subcategory: aiml-platforms
+    services:
+      - Amazon EKS
+      - SQLite
+    tags:
+      - llm
+      - rag
+      - agents
+      - workflow
+      - visual-builder
+      - langflow
+      - low-code
+      - no-code
+    complexity: beginner
+    languages:
+      - yaml
+      - python
+    last_updated: 2026-01-21
+
+  - name: datahub-data-catalog
+    title: DataHub - Data Discovery and Governance
+    description: Enterprise data catalog for metadata management, lineage tracking, and data governance across data platforms
+    path: platform-deployments/aiml-platforms/aiml-on-kubernetes/apps/datahub
+    category: platform-deployments
+    subcategory: aiml-platforms
+    services:
+      - Amazon EKS
+      - MySQL
+      - Elasticsearch
+      - Kafka
+      - Neo4j
+    tags:
+      - data-catalog
+      - metadata
+      - data-governance
+      - lineage
+      - datahub
+      - discovery
+      - data-quality
+    complexity: advanced
+    languages:
+      - yaml
+      - java
+      - python
+    last_updated: 2026-01-21
 
 # Template for adding new samples:
 #

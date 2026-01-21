@@ -23,13 +23,9 @@ langfuse:
 
   ingress:
     annotations:
-      # use group name to join existing load balancer 
-      kubernetes.io/ingress.class: alb
-      alb.ingress.kubernetes.io/group.name: grindstone-ingress
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
       alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/target-type: ip
-      # alb.ingress.kubernetes.io/certificate-arn: <certARN>
     enabled: true
     # This requires an ingress controller to be installed in the cluster
     # For example, using the nginx ingress controller:
